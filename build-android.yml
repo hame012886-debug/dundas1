@@ -1,0 +1,51 @@
+name: Build Android (APK + AAB)
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+
+      - name: Install Expo CLI
+        run: npm install -g expo-cli eas-cli
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Authenticate with Expo
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+        run: eas whoami || eas login --token $EXPO_TOKEN
+
+      # Build APK
+      - name: Build APK
+        run: eas build --platform android --profile preview --non-interactive --local --output ./app-debug.apk
+
+      # Build AAB
+      - name: Build AAB
+        run: eas build --platform android --profile preview --non-interactive --local --output ./app-debug.aab
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: app-debug-apk
+          path: app-debug.apk
+
+      - name: Upload AAB artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: app-debug-aab
+          path: app-debug.aab
